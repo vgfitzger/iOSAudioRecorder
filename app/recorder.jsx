@@ -32,6 +32,7 @@ class Recorder extends Component {
         this.blob = "";
         this.ac = null;
         this.sampleRate = 44100/2;
+
         this.componentDidMount = this.componentDidMount.bind(this);
         this.render = this.render.bind(this);
         this.start = this.start.bind(this);
@@ -54,10 +55,16 @@ class Recorder extends Component {
             return buf.buffer;
         }
         var left = e.inputBuffer.getChannelData(0);
+        this.sampleRate = e.inputBuffer.sampleRate/2;
         // we clone the samples
         this.leftAudio.push (new Float32Array (left));
+        if( e.inputBuffer.numberOfChannels > 1  ){
+            this.sampleRate = e.inputBuffer.sampleRate;
+            var right = e.inputBuffer.getChannelData(0);
+            this.rightAudio.push (new Float32Array (right));
+        }
         this.recordingLength += this.bufferSize;
-        console.log("processed")
+        console.log("processed",e.inputBuffer.numberOfChannels)
     }
     handleSuccess(stream){
         var self = this;
@@ -67,12 +74,8 @@ class Recorder extends Component {
         var source = ac.createMediaStreamSource(stream)
         source.connect(recorder);
         recorder.connect(ac.destination);
-
-
-
     }
     start(){
-
 
         var self = this;
         if( this.recording ){
@@ -135,9 +138,13 @@ class Recorder extends Component {
         }
         var audio = this.refs.outputpreview;
         var left = this.mergeBuffers(this.leftAudio, this.recordingLength)
-        //var right = this.mergeBuffers(this.rightAudio, this.recordingLength)
-        //var interleaved = this.interleave( left, right );
         var blob = this.createWAV(left);
+        if( this.rightAudio.length > 0 ){
+            var right = this.mergeBuffers(this.rightAudio, this.recordingLength)
+            var interleaved = this.interleave( left, right );
+            blob = this.createWAV(interleaved);
+        }
+
         var blobUrl = URL.createObjectURL(blob);
 
         var audio = this.refs.outputpreview;
@@ -171,7 +178,19 @@ class Recorder extends Component {
         }
         return result;
     }
+    interleave(leftChannel, rightChannel){
+        var length = leftChannel.length + rightChannel.length;
+        var result = new Float32Array(length);
 
+        var inputIndex = 0;
+
+        for (var index = 0; index < length; ){
+            result[index++] = leftChannel[inputIndex];
+            result[index++] = rightChannel[inputIndex];
+            inputIndex++;
+        }
+        return result;
+    }
     createWAV(interleaved){
         function writeUTFBytes(view, offset, string){
             var lng = string.length;

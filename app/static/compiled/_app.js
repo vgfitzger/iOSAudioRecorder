@@ -31067,6 +31067,7 @@ var Recorder = function (_Component) {
         _this.blob = "";
         _this.ac = null;
         _this.sampleRate = 44100 / 2;
+
         _this.componentDidMount = _this.componentDidMount.bind(_this);
         _this.render = _this.render.bind(_this);
         _this.start = _this.start.bind(_this);
@@ -31095,10 +31096,16 @@ var Recorder = function (_Component) {
                 return buf.buffer;
             }
             var left = e.inputBuffer.getChannelData(0);
+            this.sampleRate = e.inputBuffer.sampleRate / 2;
             // we clone the samples
             this.leftAudio.push(new Float32Array(left));
+            if (e.inputBuffer.numberOfChannels > 1) {
+                this.sampleRate = e.inputBuffer.sampleRate;
+                var right = e.inputBuffer.getChannelData(0);
+                this.rightAudio.push(new Float32Array(right));
+            }
             this.recordingLength += this.bufferSize;
-            console.log("processed");
+            console.log("processed", e.inputBuffer.numberOfChannels);
         }
     }, {
         key: 'handleSuccess',
@@ -31176,9 +31183,13 @@ var Recorder = function (_Component) {
             }
             var audio = this.refs.outputpreview;
             var left = this.mergeBuffers(this.leftAudio, this.recordingLength);
-            //var right = this.mergeBuffers(this.rightAudio, this.recordingLength)
-            //var interleaved = this.interleave( left, right );
             var blob = this.createWAV(left);
+            if (this.rightAudio.length > 0) {
+                var right = this.mergeBuffers(this.rightAudio, this.recordingLength);
+                var interleaved = this.interleave(left, right);
+                blob = this.createWAV(interleaved);
+            }
+
             var blobUrl = URL.createObjectURL(blob);
 
             var audio = this.refs.outputpreview;
@@ -31211,6 +31222,21 @@ var Recorder = function (_Component) {
                 var buffer = channelBuffer[i];
                 result.set(buffer, offset);
                 offset += buffer.length;
+            }
+            return result;
+        }
+    }, {
+        key: 'interleave',
+        value: function interleave(leftChannel, rightChannel) {
+            var length = leftChannel.length + rightChannel.length;
+            var result = new Float32Array(length);
+
+            var inputIndex = 0;
+
+            for (var index = 0; index < length;) {
+                result[index++] = leftChannel[inputIndex];
+                result[index++] = rightChannel[inputIndex];
+                inputIndex++;
             }
             return result;
         }
