@@ -1,6 +1,3 @@
 .idea
 node_modules/
 npm-debug.log
-config/prodawsconfig.json
-app/static/compiled/
-document_templates/uploaded_templates/*
