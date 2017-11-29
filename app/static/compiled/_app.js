@@ -31105,27 +31105,16 @@ var Recorder = function (_Component) {
         value: function handleSuccess(stream) {
             var self = this;
             self.stream = stream;
-            var ac = null;
-            if (typeof AudioContext !== 'undefined') {
-                ac = new AudioContext();
-            } else if (typeof webkitAudioContext !== 'undefined') {
-                ac = new webkitAudioContext();
-            }
-            if (ac) {
-                //var osc = ac.createOscillator();
-                var bufferSize = 2048;
-                var recorder = ac.createScriptProcessor(bufferSize, 1, 1);
-                recorder.onaudioprocess = this.recorderProcess;
-                this.recorder = recorder;
-                var source = ac.createMediaStreamSource(stream);
-                source.connect(recorder);
-                recorder.connect(ac.destination);
-            }
-            this.ac = ac;
+            var ac = this.ac;
+            var recorder = this.recorder;
+            var source = ac.createMediaStreamSource(stream);
+            source.connect(recorder);
+            recorder.connect(ac.destination);
         }
     }, {
         key: 'start',
         value: function start() {
+
             var self = this;
             if (this.recording) {
                 return;
@@ -31133,6 +31122,16 @@ var Recorder = function (_Component) {
                 this.setState({ recording: true });
                 this.recording = true;
             }
+
+            var AudioContext = window.AudioContext || window.webkitAudioContext;
+            var context = new AudioContext();
+
+            var recorder = context.createScriptProcessor(self.bufferSize, 1, 1);
+            recorder.onaudioprocess = self.recorderProcess;
+            self.recorder = recorder;
+
+            this.ac = context;
+
             this.audioData = [];
             this.leftAudio = [];
             this.rightAudio = [];
@@ -31185,6 +31184,10 @@ var Recorder = function (_Component) {
             var audio = this.refs.outputpreview;
             this.blob = blob;
             this.blobUrl = blobUrl;
+            console.log("test", blobUrl);
+            console.log("test blob", blob);
+            var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioContext.close();
             audio.src = blobUrl;
             this.setState({ hasBlob: true });
         }
