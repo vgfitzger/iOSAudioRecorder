@@ -1,0 +1,37 @@
+.recorder{
+  padding: 10px;
+  width: 320px;
+  margin: 0px auto;
+  h2{
+    font-family: "Open Sans";
+    text-align: center;
+  }
+  .recorderButtons{
+    width: 100%;
+    text-align: center;
+
+    a {
+      padding: 10px;
+      background: rgba(51, 51, 51, 0.37);
+
+      color: #fff;
+      margin: 5px;
+      &[data-active="true"]{
+        background: #E65100;
+        box-shadow: #000 1px 1px 1px;
+        &:hover{
+          cursor:pointer;
+        }
+      }
+    }
+  }
+  .errorMessage{
+    color:#ff0000;
+  }
+  .outputPreview{
+    text-align:center;
+    audio{
+      display:inline-block;
+    }
+  }
+}
